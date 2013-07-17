@@ -1,3 +1,4 @@
+
 /* GoomwWM, Get out of my way, Window Manager!
 
 MIT/X11 License
@@ -25,73 +26,93 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 // Xft text box, optionally editable
-textbox* textbox_create(Window parent, bitmap flags, short x, short y, short w, short h, char *font, char *fg, char *bg, char *text, char *prompt)
+textbox *
+textbox_create(Window parent, bitmap flags, short x, short y, short w, short h,
+    char *font, char *fg, char *bg, char *text, char *prompt)
 {
 	textbox *tb = allocate_clear(sizeof(textbox));
 
 	tb->flags = flags;
 	tb->parent = parent;
 
-	tb->x = x; tb->y = y; tb->w = MAX(1, w); tb->h = MAX(1, h);
-	tb->window = XCreateSimpleWindow(display, tb->parent, tb->x, tb->y, tb->w, tb->h, 0, None, color_get(bg));
+	tb->x = x;
+	tb->y = y;
+	tb->w = MAX(1, w);
+	tb->h = MAX(1, h);
+	tb->window =
+	    XCreateSimpleWindow(display, tb->parent, tb->x, tb->y, tb->w,
+	    tb->h, 0, None, color_get(bg));
 
 	// need to preload the font to calc line height
 	textbox_font(tb, font, fg, bg);
 
-	tb->prompt = strdup(prompt ? prompt: "");
-	textbox_text(tb, text ? text: "");
+	tb->prompt = strdup(prompt ? prompt : "");
+	textbox_text(tb, text ? text : "");
 
 	// auto height/width modes get handled here
 	textbox_moveresize(tb, tb->x, tb->y, tb->w, tb->h);
 
 	// edit mode controls
-	if (tb->flags & TB_EDITABLE)
-	{
+	if (tb->flags & TB_EDITABLE) {
 		tb->xim = XOpenIM(display, NULL, NULL, NULL);
-		tb->xic = XCreateIC(tb->xim, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, tb->window, XNFocusWindow, tb->window, NULL);
+		tb->xic =
+		    XCreateIC(tb->xim, XNInputStyle,
+		    XIMPreeditNothing | XIMStatusNothing, XNClientWindow,
+		    tb->window, XNFocusWindow, tb->window, NULL);
 	}
 
 	return tb;
 }
 
 // set an Xft font by name
-void textbox_font(textbox *tb, char *font, char *fg, char *bg)
+void
+textbox_font(textbox * tb, char *font, char *fg, char *bg)
 {
-	if (tb->font) XftFontClose(display, tb->font);
+	if (tb->font)
+		XftFontClose(display, tb->font);
 	tb->font = XftFontOpenName(display, screen_id, font);
 
-	XftColorAllocName(display, DefaultVisual(display, screen_id), DefaultColormap(display, screen_id), fg, &tb->color_fg);
-	XftColorAllocName(display, DefaultVisual(display, screen_id), DefaultColormap(display, screen_id), bg, &tb->color_bg);
+	XftColorAllocName(display, DefaultVisual(display, screen_id),
+	    DefaultColormap(display, screen_id), fg, &tb->color_fg);
+	XftColorAllocName(display, DefaultVisual(display, screen_id),
+	    DefaultColormap(display, screen_id), bg, &tb->color_bg);
 }
 
 // outer code may need line height, width, etc
-void textbox_extents(textbox *tb)
+void
+textbox_extents(textbox * tb)
 {
 	int length = strlen(tb->text) + strlen(tb->prompt);
 	char *line = alloca(length + 1);
 	sprintf(line, "%s%s", tb->prompt, tb->text);
-	XftTextExtents8(display, tb->font, (unsigned char*)line, length, &tb->extents);
+	XftTextExtents8(display, tb->font, (unsigned char *) line, length,
+	    &tb->extents);
 }
 
 // set the default text to display
-void textbox_text(textbox *tb, char *text)
+void
+textbox_text(textbox * tb, char *text)
 {
-	if (tb->text) free(tb->text);
+	if (tb->text)
+		free(tb->text);
 	tb->text = strdup(text);
 	tb->cursor = MAX(0, MIN(strlen(text), tb->cursor));
 	textbox_extents(tb);
 }
 
 // set an input prompt for edit mode
-void textbox_prompt(textbox *tb, char *text)
+void
+textbox_prompt(textbox * tb, char *text)
 {
-	if (tb->prompt) free(tb->prompt);
+	if (tb->prompt)
+		free(tb->prompt);
 	tb->prompt = strdup(text);
 	textbox_extents(tb);
 }
 
 // within the parent. handled auto width/height modes
-void textbox_moveresize(textbox *tb, int x, int y, int w, int h)
+void
+textbox_moveresize(textbox * tb, int x, int y, int w, int h)
 {
 	if (tb->flags & TB_AUTOHEIGHT)
 		h = tb->font->ascent + tb->font->descent;
@@ -99,67 +120,79 @@ void textbox_moveresize(textbox *tb, int x, int y, int w, int h)
 	if (tb->flags & TB_AUTOWIDTH)
 		w = tb->extents.width;
 
-	if (x != tb->x || y != tb->y || w != tb->w || h != tb->h)
-	{
-		tb->x = x; tb->y = y; tb->w = MAX(1, w); tb->h = MAX(1, h);
-		XMoveResizeWindow(display, tb->window, tb->x, tb->y, tb->w, tb->h);
+	if (x != tb->x || y != tb->y || w != tb->w || h != tb->h) {
+		tb->x = x;
+		tb->y = y;
+		tb->w = MAX(1, w);
+		tb->h = MAX(1, h);
+		XMoveResizeWindow(display, tb->window, tb->x, tb->y, tb->w,
+		    tb->h);
 	}
 }
 
-void textbox_show(textbox *tb)
+void
+textbox_show(textbox * tb)
 {
 	XMapWindow(display, tb->window);
 }
 
-void textbox_hide(textbox *tb)
+void
+textbox_hide(textbox * tb)
 {
 	XUnmapWindow(display, tb->window);
 }
 
 // will also unmap the window if still displayed
-void textbox_free(textbox *tb)
+void
+textbox_free(textbox * tb)
 {
-	if (tb->flags & TB_EDITABLE)
-	{
+	if (tb->flags & TB_EDITABLE) {
 		XDestroyIC(tb->xic);
 		XCloseIM(tb->xim);
 	}
 
-	if (tb->text) free(tb->text);
-	if (tb->prompt) free(tb->prompt);
-	if (tb->font) XftFontClose(display, tb->font);
+	if (tb->text)
+		free(tb->text);
+	if (tb->prompt)
+		free(tb->prompt);
+	if (tb->font)
+		XftFontClose(display, tb->font);
 
 	XDestroyWindow(display, tb->window);
 	free(tb);
 }
 
-void textbox_draw(textbox *tb)
+void
+textbox_draw(textbox * tb)
 {
 	int i;
 	XGlyphInfo extents;
 
-	GC context    = XCreateGC(display, tb->window, 0, 0);
-	Pixmap canvas = XCreatePixmap(display, tb->window, tb->w, tb->h, DefaultDepth(display, screen_id));
-	XftDraw *draw = XftDrawCreate(display, canvas, DefaultVisual(display, screen_id), DefaultColormap(display, screen_id));
+	GC context = XCreateGC(display, tb->window, 0, 0);
+	Pixmap canvas =
+	    XCreatePixmap(display, tb->window, tb->w, tb->h,
+	    DefaultDepth(display, screen_id));
+	XftDraw *draw =
+	    XftDrawCreate(display, canvas, DefaultVisual(display, screen_id),
+	    DefaultColormap(display, screen_id));
 
 	// clear canvas
 	XftDrawRect(draw, &tb->color_bg, 0, 0, tb->w, tb->h);
 
-	char *line   = tb->text,
-		*text   = tb->text ? tb->text: "",
-		*prompt = tb->prompt ? tb->prompt: "";
+	char *line = tb->text,
+	    *text = tb->text ? tb->text : "",
+	    *prompt = tb->prompt ? tb->prompt : "";
 
-	int text_len    = strlen(text);
-	int length      = text_len;
+	int text_len = strlen(text);
+	int length = text_len;
 	int line_height = tb->font->ascent + tb->font->descent;
-	int line_width  = 0;
+	int line_width = 0;
 
-	int cursor_x      = 0;
+	int cursor_x = 0;
 	int cursor_offset = 0;
-	int cursor_width  = MAX(2, line_height/10);
+	int cursor_width = MAX(2, line_height / 10);
 
-	if (tb->flags & TB_EDITABLE)
-	{
+	if (tb->flags & TB_EDITABLE) {
 		int prompt_len = strlen(prompt);
 		length = text_len + prompt_len;
 		cursor_offset = MIN(tb->cursor + prompt_len, length);
@@ -168,33 +201,41 @@ void textbox_draw(textbox *tb)
 		sprintf(line, "%s%s", prompt, text);
 
 		// replace spaces so XftTextExtents8 includes their width
-		for (i = 0; i < length; i++) if (isspace(line[i])) line[i] = '_';
+		for (i = 0; i < length; i++)
+			if (isspace(line[i]))
+				line[i] = '_';
 
 		// calc cursor position
-		XftTextExtents8(display, tb->font, (unsigned char*)line, cursor_offset, &extents);
+		XftTextExtents8(display, tb->font, (unsigned char *) line,
+		    cursor_offset, &extents);
 		cursor_x = extents.width;
 
 		// restore correct text string with spaces
 		sprintf(line, "%s%s", prompt, text);
 	}
-
 	// calc full input text width
-	XftTextExtents8(display, tb->font, (unsigned char*)line, length, &extents);
+	XftTextExtents8(display, tb->font, (unsigned char *) line, length,
+	    &extents);
 	line_width = extents.width;
 
 	int x = 0, y = tb->font->ascent;
-	if (tb->flags & TB_RIGHT)  x = tb->w - line_width;
-	if (tb->flags & TB_CENTER) x = (tb->w - line_width) / 2;
+	if (tb->flags & TB_RIGHT)
+		x = tb->w - line_width;
+	if (tb->flags & TB_CENTER)
+		x = (tb->w - line_width) / 2;
 
 	// draw the text, including any prompt in edit mode
-	XftDrawString8(draw, &tb->color_fg, tb->font, x, y, (unsigned char*)line, length);
+	XftDrawString8(draw, &tb->color_fg, tb->font, x, y,
+	    (unsigned char *) line, length);
 
 	// draw the cursor
 	if (tb->flags & TB_EDITABLE)
-		XftDrawRect(draw, &tb->color_fg, cursor_x, 2, cursor_width, line_height-4);
+		XftDrawRect(draw, &tb->color_fg, cursor_x, 2, cursor_width,
+		    line_height - 4);
 
 	// flip canvas to window
-	XCopyArea(display, canvas, tb->window, context, 0, 0, tb->w, tb->h, 0, 0);
+	XCopyArea(display, canvas, tb->window, context, 0, 0, tb->w, tb->h, 0,
+	    0);
 
 	XFreeGC(display, context);
 	XftDrawDestroy(draw);
@@ -202,37 +243,43 @@ void textbox_draw(textbox *tb)
 }
 
 // cursor handling for edit mode
-void textbox_cursor(textbox *tb, int pos)
+void
+textbox_cursor(textbox * tb, int pos)
 {
 	tb->cursor = MAX(0, MIN(strlen(tb->text), pos));
 }
 
 // move right
-void textbox_cursor_inc(textbox *tb)
+void
+textbox_cursor_inc(textbox * tb)
 {
-	textbox_cursor(tb, tb->cursor+1);
+	textbox_cursor(tb, tb->cursor + 1);
 }
 
 // move left
-void textbox_cursor_dec(textbox *tb)
+void
+textbox_cursor_dec(textbox * tb)
 {
-	textbox_cursor(tb, tb->cursor-1);
+	textbox_cursor(tb, tb->cursor - 1);
 }
 
 // beginning of line
-void textbox_cursor_home(textbox *tb)
+void
+textbox_cursor_home(textbox * tb)
 {
 	tb->cursor = 0;
 }
 
 // end of line
-void textbox_cursor_end(textbox *tb)
+void
+textbox_cursor_end(textbox * tb)
 {
 	tb->cursor = strlen(tb->text);
 }
 
 // insert text
-void textbox_insert(textbox *tb, int pos, char *str)
+void
+textbox_insert(textbox * tb, int pos, char *str)
 {
 	int len = strlen(tb->text), slen = strlen(str);
 	pos = MAX(0, MIN(len, pos));
@@ -247,7 +294,8 @@ void textbox_insert(textbox *tb, int pos, char *str)
 }
 
 // remove text
-void textbox_delete(textbox *tb, int pos, int dlen)
+void
+textbox_delete(textbox * tb, int pos, int dlen)
 {
 	int len = strlen(tb->text);
 	pos = MAX(0, MIN(len, pos));
@@ -258,7 +306,8 @@ void textbox_delete(textbox *tb, int pos, int dlen)
 }
 
 // insert one character
-void textbox_cursor_ins(textbox *tb, char c)
+void
+textbox_cursor_ins(textbox * tb, char c)
 {
 	char tmp[2] = { c, 0 };
 	textbox_insert(tb, tb->cursor, tmp);
@@ -266,16 +315,17 @@ void textbox_cursor_ins(textbox *tb, char c)
 }
 
 // delete on character
-void textbox_cursor_del(textbox *tb)
+void
+textbox_cursor_del(textbox * tb)
 {
 	textbox_delete(tb, tb->cursor, 1);
 }
 
 // back up and delete one character
-void textbox_cursor_bkspc(textbox *tb)
+void
+textbox_cursor_bkspc(textbox * tb)
 {
-	if (tb->cursor > 0)
-	{
+	if (tb->cursor > 0) {
 		textbox_cursor_dec(tb);
 		textbox_cursor_del(tb);
 	}
@@ -285,59 +335,42 @@ void textbox_cursor_bkspc(textbox *tb)
 // 0 = unhandled
 // 1 = handled
 // -1 = handled and return pressed (finished)
-int textbox_keypress(textbox *tb, XEvent *ev)
+int
+textbox_keypress(textbox * tb, XEvent * ev)
 {
-	KeySym key; Status stat;
-	char pad[32]; int len;
+	KeySym key;
+	Status stat;
+	char pad[32];
+	int len;
 
-	if (!(tb->flags & TB_EDITABLE)) return 0;
+	if (!(tb->flags & TB_EDITABLE))
+		return 0;
 
-	len = XmbLookupString(tb->xic, &ev->xkey, pad, sizeof(pad), &key, &stat);
+	len =
+	    XmbLookupString(tb->xic, &ev->xkey, pad, sizeof(pad), &key, &stat);
 	pad[len] = 0;
 
-	if (key == XK_Left)
-	{
+	if (key == XK_Left) {
 		textbox_cursor_dec(tb);
 		return 1;
-	}
-	else
-	if (key == XK_Right)
-	{
+	} else if (key == XK_Right) {
 		textbox_cursor_inc(tb);
 		return 1;
-	}
-	else
-	if (key == XK_Home)
-	{
+	} else if (key == XK_Home) {
 		textbox_cursor_home(tb);
 		return 1;
-	}
-	else
-	if (key == XK_End)
-	{
+	} else if (key == XK_End) {
 		textbox_cursor_end(tb);
 		return 1;
-	}
-	else
-	if (key == XK_Delete)
-	{
+	} else if (key == XK_Delete) {
 		textbox_cursor_del(tb);
 		return 1;
-	}
-	else
-	if (key == XK_BackSpace)
-	{
+	} else if (key == XK_BackSpace) {
 		textbox_cursor_bkspc(tb);
 		return 1;
-	}
-	else
-	if (key == XK_Return)
-	{
+	} else if (key == XK_Return) {
 		return -1;
-	}
-	else
-	if (!iscntrl(*pad))
-	{
+	} else if (!iscntrl(*pad)) {
 		textbox_insert(tb, tb->cursor, pad);
 		textbox_cursor_inc(tb);
 		return 1;
