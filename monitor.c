@@ -83,7 +83,6 @@ monitor_dimensions_struts(int x, int y, workarea *mon)
 	rattr = window_get_attributes(root);
 	left = 0, right = 0, top = 0, bottom = 0;
 
-	win;
 	// walk the open apps and check for struts
 	// this is fairly lightweight thanks to some caches
 	winlist_ascend(windows_in_play(), i, win) {

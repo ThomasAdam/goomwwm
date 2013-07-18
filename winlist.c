@@ -25,7 +25,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-winlist *
+winlist*
 winlist_new()
 {
 	winlist *l = allocate(sizeof(winlist));

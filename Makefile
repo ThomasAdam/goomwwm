@@ -7,13 +7,10 @@ normal:
 debug:
 	$(CC) -o goomwwm-debug goomwwm.c $(CFLAGS) -g -DDEBUG $(LDADD)
 
-proto:
-	cat *.c | egrep '^(void|int|char|unsigned|client|Window|winlist|box|textbox|XWindow)' | sed -r 's/\)/);/' > proto.h
-
 docs:
 	pandoc -s -w man goomwwm.md -o goomwwm.1
 
-all: proto normal debug docs
+all: normal debug docs
 
 clean:
 	rm -f goomwwm goomwwm-debug
