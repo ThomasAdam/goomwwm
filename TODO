@@ -1,0 +1,5 @@
+Rough TODO items:
+
+* Link source files appropriately:  STOP #include from goomwwm.c
+* Continue updating style of files to conform to BSD syntax.
+* Add desktops per monitor.
