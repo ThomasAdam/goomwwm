@@ -1,0 +1,20 @@
+border 5
+focus #00a865
+blur blue
+flashpx 11
+flashtitle show
+focusmode sloppy
+warpmode focus
+
+1 class:XTerm
+2 class:chromium
+
+rule class:chromium monitor2,large,top,expand
+auto class:xterm
+
+onlyauto
+
+ruleset Master & Stack Right
+rule class:.* reset,right,small,maximize_vert
+rule class:.* once left,raise,expand
+rule edge:right once vtile
