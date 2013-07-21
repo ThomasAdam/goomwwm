@@ -7,10 +7,7 @@ normal:
 debug:
 	$(CC) -o goomwwm-debug goomwwm.c $(CFLAGS) -g -DDEBUG $(LDADD)
 
-docs:
-	pandoc -s -w man goomwwm.md -o goomwwm.1
-
-all: normal debug docs
+all: normal debug
 
 clean:
 	rm -f goomwwm goomwwm-debug
