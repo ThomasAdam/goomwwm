@@ -2,3 +2,5 @@ goomwwm
 goomwwm-debug
 roll
 release
+*.o
+tags
