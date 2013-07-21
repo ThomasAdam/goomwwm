@@ -25,6 +25,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#include "goomwwm.h"
+
 // for the benefit of EWMH type pagers, tag = desktop
 // but, since a window can have multiple tags... oh well
 unsigned int

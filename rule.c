@@ -24,6 +24,14 @@
  */
 
 // load a rule specified on cmd line or .goomwwmrc
+
+#include <string.h>
+
+#include "goomwwm.h"
+
+extern winrulemap  rulemap[];
+winruleset *config_rulesets = NULL;
+
 int
 rule_parse(char *rulestr)
 {
@@ -63,7 +71,7 @@ rule_parse(char *rulestr)
 			} else {
 				int i;
 				for (i = 0;
-				    i < sizeof(rulemap) / sizeof(winrulemap);
+				    i < sizeof(*rulemap) / sizeof(winrulemap);
 				    i++)
 					if (!strcasecmp(flag, rulemap[i].name)) {
 						new->flags |= rulemap[i].flag;

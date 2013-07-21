@@ -23,6 +23,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "goomwwm.h"
+
 void
 cli_message(Atom atom, char *cmd)
 {

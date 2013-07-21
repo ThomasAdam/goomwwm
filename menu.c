@@ -23,6 +23,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+
+#include "goomwwm.h"
+#include <string.h>
+
 void
 menu_draw(textbox * text, textbox ** boxes, int max_lines, int selected,
     char **filtered)

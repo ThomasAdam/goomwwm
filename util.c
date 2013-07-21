@@ -25,6 +25,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#include "goomwwm.h"
+
 void *
 allocate(unsigned long bytes)
 {
@@ -326,6 +328,8 @@ notification(int delay, const char *fmt, ...)
 	    config_title_bg, config_title_bc, txt);
 }
 
+/* TA:  Disabled for now until we sort out the mess that is event logging. */
+#if 0
 #ifdef DEBUG
 void
 event_log(const char *e, Window w)
@@ -357,4 +361,5 @@ event_note(const char *fmt, ...)
 }
 #else
 #define event_note(...)
+#endif
 #endif

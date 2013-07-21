@@ -24,6 +24,14 @@
  */
 
 /* Xft text box, optionally editable */
+
+#include "goomwwm.h"
+
+extern const char *gatom_names[];
+extern const char *netatom_names[];
+extern const char *atom_names[];
+extern unsigned int current_tag;
+
 box*
 box_create(Window parent, bitmap flags, short x, short y, short w, short h,
     char *color)

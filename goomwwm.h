@@ -24,6 +24,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#ifndef _GOOMWWMH_H
+#define _GOOMWWMH_H
+
 #include <X11/X.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -47,6 +50,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <fcntl.h>
 #include <regex.h>
 #include <err.h>
+#include <libgen.h>
 #include <X11/extensions/Xinerama.h>
 
 typedef unsigned char bool;
@@ -312,7 +316,7 @@ typedef struct _rule {
 } winrule;
 
 // all global rules. this is separate from rule sets!
-winrule *config_rules = NULL;
+extern winrule *config_rules;
 
 // a set of rules to execute in order, like a mini script.
 // this is separate from global rules!
@@ -323,7 +327,7 @@ typedef struct _ruleset {
 } winruleset;
 
 // all defined rulesets
-winruleset *config_rulesets = NULL;
+extern winruleset *config_rulesets;
 
 // for converting rule strings to bit flags
 typedef struct {
@@ -331,66 +335,10 @@ typedef struct {
 	bitmap flag;
 } winrulemap;
 
-winrulemap rulemap[] = {
-	{ "tag1", TAG1 },
-	{ "tag2", TAG2 },
-	{ "tag3", TAG3 },
-	{ "tag4", TAG4 },
-	{ "tag5", TAG5 },
-	{ "tag6", TAG6 },
-	{ "tag7", TAG7 },
-	{ "tag8", TAG8 },
-	{ "tag9", TAG9 },
-	{ "ignore", RULE_IGNORE },
-	{ "above", RULE_ABOVE },
-	{ "sticky", RULE_STICKY },
-	{ "below", RULE_BELOW },
-	{ "fullscreen", RULE_FULLSCREEN },
-	{ "maximize_horz", RULE_MAXHORZ },
-	{ "maximize_vert", RULE_MAXVERT },
-	{ "top",    RULE_TOP },
-	{ "bottom", RULE_BOTTOM },
-	{ "left",   RULE_LEFT },
-	{ "right",  RULE_RIGHT },
-	{ "center", RULE_CENTER },
-	{ "pointer", RULE_POINTER },
-	{ "small",  RULE_SMALL },
-	{ "medium", RULE_MEDIUM },
-	{ "large",  RULE_LARGE },
-	{ "cover", RULE_COVER },
-	{ "replace", RULE_REPLACE },
-	{ "steal", RULE_STEAL },
-	{ "block", RULE_BLOCK },
-	{ "hlock", RULE_HLOCK },
-	{ "vlock", RULE_VLOCK },
-	{ "expand", RULE_EXPAND },
-	{ "contract", RULE_CONTRACT },
-	{ "skip_taskbar", RULE_SKIPTBAR },
-	{ "skip_pager", RULE_SKIPPAGE },
-	{ "raise", RULE_RAISE },
-	{ "lower", RULE_LOWER },
-	{ "snap_left", RULE_SNAPLEFT },
-	{ "snap_right", RULE_SNAPRIGHT },
-	{ "snap_up", RULE_SNAPUP },
-	{ "snap_down", RULE_SNAPDOWN },
-	{ "duplicate", RULE_DUPLICATE },
-	{ "minimize", RULE_MINIMIZE },
-	{ "restore", RULE_RESTORE },
-	{ "monitor1", RULE_MONITOR1 },
-	{ "monitor2", RULE_MONITOR2 },
-	{ "monitor3", RULE_MONITOR3 },
-	{ "once", RULE_ONCE },
-	{ "htile", RULE_HTILE },
-	{ "vtile", RULE_VTILE },
-	{ "huntile", RULE_HUNTILE },
-	{ "vuntile", RULE_VUNTILE },
-	{ "reset", RULE_RESET },
-	{ "minimize_auto", RULE_AUTOMINI },
-	{ "lower_auto", RULE_AUTOLOWER },
-};
+extern winrulemap rulemap[];
 
 // a placeholder
-char *empty = "";
+extern char *empty;
 
 // collect and store data on a window
 typedef struct {
@@ -454,8 +402,8 @@ char *config_border_focus, *config_border_blur, *config_border_attention,
 
 char *config_switcher, *config_launcher, *config_apps_patterns[10];
 // these must be the same size and keys must remain in ascending order (regardless of key value/position order)
-KeySym config_apps_keysyms[] = { XK_1,  XK_2,  XK_3,  XK_4,  XK_5,  XK_6,  XK_7,  XK_8,  XK_9,  XK_0, 0 };
-KeySym config_tags_keysyms[] = { XK_F1, XK_F2, XK_F3, XK_F4, XK_F5, XK_F6, XK_F7, XK_F8, XK_F9, 0,    0 };
+extern KeySym config_apps_keysyms[];
+extern KeySym config_tags_keysyms[];
 
 #define MAXMODCODES 16
 unsigned int config_modkeycodes[MAXMODCODES+1];
@@ -524,13 +472,13 @@ unsigned int config_modkeycodes[MAXMODCODES+1];
 	X(KEY_LAUNCH,             0, XK_x,          -launch    )
 
 enum { KEYLIST(KEY_ENUM) };
-KeySym keymap[] = { KEYLIST(KEY_KSYM), 0 };
-unsigned int keymodmap[] = { KEYLIST(KEY_KMOD), 0 };
-char *keyargs[] = { KEYLIST(KEY_CARG), NULL };
+extern KeySym keymap[]; // = { KEYLIST(KEY_KSYM), 0 };
+extern unsigned int keymodmap[]; // = { KEYLIST(KEY_KMOD), 0 };
+extern char *keyargs[]; //= { KEYLIST(KEY_CARG), NULL };
 
-unsigned int NumlockMask = 0;
+extern unsigned int NumlockMask;
 Display *display; Screen *screen; Window root; int screen_id;
-Time latest = CurrentTime;
+extern Time latest;
 
 // mouse move/resize controls
 // see ButtonPress,MotionNotify
@@ -542,16 +490,16 @@ struct mouse_drag {
 	short x, y, w, h;
 	unsigned int flags;
 };
-struct mouse_drag *mouse_dragger = NULL;
+extern struct mouse_drag *mouse_dragger;
 
-bool quit_pressed_once = 0;
-bool prefix_mode_active = 0;
+extern bool quit_pressed_once;
+extern bool prefix_mode_active;
 Cursor prefix_cursor;
 Window supporting;
 
 // tracking windows
 winlist *windows, *windows_activated, *windows_minimized, *windows_shaded;
-unsigned int current_tag = TAG1;
+extern unsigned int current_tag; // = TAG1;
 
 // caches used to reduce X server round trips
 winlist *cache_client;
@@ -559,8 +507,6 @@ winlist *cache_xattr;
 winlist *cache_inplay;
 
 workarea cache_monitor[6];
-
-static int (*xerror)(Display *, XErrorEvent *);
 
 typedef struct {
 	unsigned long flags, functions, decorations;
@@ -580,7 +526,7 @@ typedef struct {
 	X(WM_PROTOCOLS)
 
 enum { GENERAL_ATOMS(ATOM_ENUM), ATOMS };
-const char *atom_names[] = { GENERAL_ATOMS(ATOM_CHAR) };
+extern const char *atom_names[]; //= { GENERAL_ATOMS(ATOM_CHAR) };
 Atom atoms[ATOMS];
 
 #define EWMH_ATOMS(X) \
@@ -647,7 +593,7 @@ Atom atoms[ATOMS];
 	X(_NET_SUPPORTED)
 
 enum { EWMH_ATOMS(ATOM_ENUM), NETATOMS };
-const char *netatom_names[] = { EWMH_ATOMS(ATOM_CHAR) };
+extern const char *netatom_names[]; // = { EWMH_ATOMS(ATOM_CHAR) };
 Atom netatoms[NETATOMS];
 
 #define ADD 1
@@ -665,5 +611,14 @@ Atom netatoms[NETATOMS];
 	X(GOOMWWM_RESTART)
 
 enum { GOOMWWM_ATOMS(ATOM_ENUM), GATOMS };
-const char *gatom_names[] = { GOOMWWM_ATOMS(ATOM_CHAR) };
+extern const char *gatom_names[]; //= { GOOMWWM_ATOMS(ATOM_CHAR) };
 Atom gatoms[GATOMS];
+
+#define event_log(...)
+#define event_note(...)
+#define event_client_dump(...)
+
+/* Include protoypes for functions here. */
+#include "proto.h"
+
+#endif

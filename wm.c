@@ -25,6 +25,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#include "goomwwm.h"
+
+extern winruleset *config_rulesets;
+
+static int (*xerror)(Display *, XErrorEvent *);
+
 // X error handler
 int
 oops(Display * d, XErrorEvent * ee)
@@ -384,7 +390,7 @@ setup_general_options(int ac, char *av[])
 	// optionally swap tag and app key
 	mode = find_arg_str(ac, av, "-appkeys", "numbers");
 	if (!strcasecmp(mode, "functions")) {
-		for (i = 0; i < sizeof(config_apps_keysyms) / sizeof(KeySym);
+		for (i = 0; i < sizeof(*config_apps_keysyms) / sizeof(KeySym);
 		    i++) {
 			KeySym k = config_apps_keysyms[i];
 			config_apps_keysyms[i] = config_tags_keysyms[i];

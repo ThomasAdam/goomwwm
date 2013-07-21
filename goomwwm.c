@@ -23,25 +23,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#define _GNU_SOURCE
 #include "version.h"
 #include "goomwwm.h"
-#include "proto.h"
-#include "util.c"
-#include "box.c"
-#include "textbox.c"
-#include "winlist.c"
-#include "rule.c"
-#include "window.c"
-#include "monitor.c"
-#include "client.c"
-#include "ewmh.c"
-#include "tag.c"
-#include "menu.c"
-#include "handle.c"
-#include "grab.c"
-#include "cli.c"
-#include "wm.c"
+
+
 
 int
 main(int argc, char *argv[])

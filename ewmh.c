@@ -24,6 +24,9 @@
  */
 
 // update _NET_CLIENT_LIST
+
+#include "goomwwm.h"
+
 void
 ewmh_client_list()
 {

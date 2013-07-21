@@ -26,6 +26,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 // Xft text box, optionally editable
+
+#include "goomwwm.h"
+
 textbox *
 textbox_create(Window parent, bitmap flags, short x, short y, short w, short h,
     char *font, char *fg, char *bg, char *text, char *prompt)

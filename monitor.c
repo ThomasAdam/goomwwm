@@ -24,6 +24,9 @@
  */
 
 // find the dimensions of the monitor displaying point x,y
+
+#include "goomwwm.h"
+
 void
 monitor_dimensions(int x, int y, workarea * mon)
 {

@@ -25,6 +25,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#include "goomwwm.h"
+
 // events we're interested in
 void
 window_select(Window w)

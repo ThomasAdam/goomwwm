@@ -25,6 +25,8 @@
 
 /* manipulate client _NET_WM_STATE_* */
 
+#include "goomwwm.h"
+
 void
 client_flush_state(client *c)
 {
@@ -3065,6 +3067,8 @@ client_rules_apply(client * c, bool reset)
 		client_minimize(c);
 }
 
+/* TA:  Disable for now until we sort out this mess. */
+#if 0
 #ifdef DEBUG
 // debug
 void
@@ -3137,4 +3141,5 @@ event_client_dump(client * c)
 }
 #else
 #define event_client_dump(...)
+#endif
 #endif

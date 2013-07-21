@@ -24,6 +24,9 @@
  */
 
 // bind to a keycode in all lock states
+
+#include "goomwwm.h"
+
 void
 grab_keycode(unsigned int mask, KeyCode keycode)
 {

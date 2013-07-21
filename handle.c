@@ -23,6 +23,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "goomwwm.h"
+
 // when using the -prefix key, the prefix key modifiers can be held down, or released and
 // automatically implied for the final key combo. this is really designed to work with the
 // common global -modkey. custom key combinations should generally work too, but might show
