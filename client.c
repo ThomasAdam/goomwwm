@@ -122,9 +122,9 @@ client_descriptive_data(client *c)
 void
 client_extended_data(client *c)
 {
-	int	 screen_x, screen_y, screen_width, screen_height, vague;
-	int	 x, y, w, h;
-	long	 sr;
+	int		 screen_x, screen_y, screen_width, screen_height, vague;
+	int		 x, y, w, h;
+	long		 sr;
 
 	if (!c || c->is_extended)
 		return;
@@ -609,7 +609,7 @@ client_moveresize(client *c, unsigned int flags, int fx, int fy, int fw,
 	Window	 win;
 	int	 vague, i, xsnap, ysnap;
 	client	*o;
-	workarea monitor;
+	workarea monitor, current_mon;
 
 	client_extended_data(c);
 	vague = MAX(c->monitor.w / 100, c->monitor.h / 100);
@@ -834,6 +834,11 @@ client_moveresize(client *c, unsigned int flags, int fx, int fy, int fw,
 	c->y = fy;
 	c->w = fw;
 	c->h = fh;
+
+	// At this point, we need to include on which monitor the client is,
+	// and which tag.
+	monitor_active(&current_mon);
+	monitor.num = current_mon.num;
 	memmove(&c->monitor, &monitor, sizeof(workarea));
 
 	/* compensate for border on non-fullscreen windows */
@@ -1513,9 +1518,12 @@ client_raise(client *c, int priority)
 	Window	 w;
 	client	*o;
 	winlist	*stack;
+	workarea mon;
 
 	if (!priority && client_has_state(c, netatoms[_NET_WM_STATE_BELOW]))
 		return;
+
+	monitor_active(&mon);
 
 	stack = winlist_new();
 
@@ -1527,24 +1535,32 @@ client_raise(client *c, int priority)
 			client_stack_family(c, stack);
 
 		// locate windows with both _NET_WM_STATE_STICKY and _NET_WM_STATE_ABOVE
-		managed_descend(i, w, o)
+		managed_descend(i, w, o) {
 		    if (winlist_find(stack, w) < 0 && o->visible
 		    && o->trans == None
 		    && client_has_state(o, netatoms[_NET_WM_STATE_ABOVE])
-		    && client_has_state(o, netatoms[_NET_WM_STATE_STICKY]))
+		    && client_has_state(o, netatoms[_NET_WM_STATE_STICKY])
+		    && client_on_monitor(o, &mon))
 			client_stack_family(o, stack);
+		}
+
 		// locate windows in the current_tag with _NET_WM_STATE_ABOVE
-		tag_descend(i, w, o, current_tag)
+		tag_descend(i, w, o, get_current_tag()) {
 		    if (winlist_find(stack, w) < 0 && o->visible
 		    && o->trans == None
-		    && client_has_state(o, netatoms[_NET_WM_STATE_ABOVE]))
+		    && client_has_state(o, netatoms[_NET_WM_STATE_ABOVE])
+		    && client_on_monitor(o, &mon))
 			client_stack_family(o, stack);
+		}
+
 		// locate _NET_WM_WINDOW_TYPE_DOCK windows
-		clients_descend(windows_in_play(), i, w, o)
+		clients_descend(windows_in_play(), i, w, o) {
 		    if (winlist_find(stack, w) < 0 && o->visible
 		    && c->trans == None
-		    && o->type == netatoms[_NET_WM_WINDOW_TYPE_DOCK])
+		    && o->type == netatoms[_NET_WM_WINDOW_TYPE_DOCK]
+		    && client_on_monitor(o, &mon))
 			client_stack_family(o, stack);
+		}
 	}
 	// locate our family
 	if (winlist_find(stack, c->window) < 0)
@@ -1582,19 +1598,24 @@ client_raise_under(client *c, client *under)
 void
 client_lower(client *c, int priority)
 {
-	int	 i;
-	Window	 w;
-	client	*o, *under;
+	int		 i;
+	Window		 w;
+	client		*o, *under;
+	workarea	 mon;
 
 	if (!priority && client_has_state(c, netatoms[_NET_WM_STATE_ABOVE]))
 		return;
 
+	monitor_active(&mon);
+
 	// locate the lowest window in the tag
 	under = NULL;
-	tag_descend(i, w, o, current_tag)
+	tag_descend(i, w, o, get_current_tag()) {
 	    if (o->trans == None && o->window != c->window
-	    && !client_has_state(o, netatoms[_NET_WM_STATE_BELOW]))
+	    && !client_has_state(o, netatoms[_NET_WM_STATE_BELOW])
+	    && client_on_monitor(o, &mon))
 		under = o;
+	}
 
 	if (under)
 		client_raise_under(c, under);
@@ -1719,8 +1740,10 @@ client_review_desktop(client *c)
 		    &d, 1);
 	} else
 		// window has a desktop set. convert it to tag
-	if (d < TAGS)
+	if (d < TAGS) {
+		fprintf(stderr, "DESKTOP_TO_TAG: %lu\n", d);
 		c->cache->tags |= desktop_to_tag(d);
+	}
 	else if (d == 0xffffffff)
 		c->cache->tags = 0;
 }
@@ -1804,10 +1827,15 @@ client_activate(client *c, int raise, int warp)
 	int	i;
 	Window	w;
 	client *o;
+	workarea mon;
+
+	monitor_active(&mon);
 
 	// deactivate everyone else
-	clients_ascend(windows_in_play(), i, w, o) if (w != c->window)
-		client_deactivate(o, c);
+	clients_ascend(windows_in_play(), i, w, o) {
+		if (w != c->window && client_on_monitor(o, &mon))
+			client_deactivate(o, c);
+	}
 
 	if (c->minimized)
 		client_restore(c);
@@ -1898,12 +1926,12 @@ client_active(unsigned int tag)
 	// otherwise look for any visible, manageable window
 	if (!c)
 		managed_descend(i, w, o) {
-		c = o;
-		break;
+			c = o;
+			break;
 		}
 	// if we found one, activate it
-	if (c && (!c->focus || !c->active))
-		client_activate(c, RAISEDEF, WARPDEF);
+	//if (c && (!c->focus || !c->active))
+	//	client_activate(c, RAISEDEF, WARPDEF);
 	return c;
 }
 
@@ -2188,19 +2216,27 @@ client_cycle(client *c)
 	int	 i;
 	Window	 w;
 	client	*o;
+	workarea mon;
+
+	monitor_active(&mon);
 
 	// find an intersecting client near the bottom of the stack to raise
-	tag_ascend(i, w, o, current_tag)
-	    if (w != c->window && clients_intersect(c, o)) {
-		client_switch_to(o);
-		return;
+	tag_ascend(i, w, o, get_current_tag()) {
+		if (w != c->window && clients_intersect(c, o)
+		    && client_on_monitor(o, &mon)) {
+			client_switch_to(o);
+			return;
+		}
 	}
 
-	tag_ascend(i, w, o, c->cache->tags)
-	    if (w != c->window && clients_intersect(c, o)) {
-		client_switch_to(o);
-		return;
+	tag_ascend(i, w, o, c->cache->tags) {
+		if (w != c->window && clients_intersect(c, o)
+		    && client_on_monitor(o, &mon)) {
+			client_switch_to(o);
+			return;
+		}
 	}
+		
 	// nothing to cycle. do something visual to acknowledge key press
 	client_flash(c, config_border_focus, config_flash_ms, FLASHTITLEDEF);
 }
@@ -2220,7 +2256,7 @@ client_htile(client *c)
 	vague = MAX(c->monitor.w / 100, c->monitor.h / 100);
 
 	// locate windows with same tag, size, and position
-	tag_descend(i, w, o, current_tag | c->cache->tags) if (c->window != w)
+	tag_descend(i, w, o, get_current_tag() | c->cache->tags) if (c->window != w)
 		if (NEAR(c->x, vague, o->x) && NEAR(c->y, vague, o->y)
 		    && NEAR(c->w, vague, o->w) && NEAR(c->h, vague, o->h))
 			winlist_append(tiles, w, NULL);
@@ -2281,7 +2317,7 @@ client_vtile(client *c)
 	vague = MAX(c->monitor.w / 100, c->monitor.h / 100);
 	
 	// locate windows with same tag, size, and position
-	tag_descend(i, w, o, current_tag | c->cache->tags) if (c->window != w)
+	tag_descend(i, w, o, get_current_tag() | c->cache->tags) if (c->window != w)
 		if (NEAR(c->x, vague, o->x) && NEAR(c->y, vague, o->y)
 		    && NEAR(c->w, vague, o->w) && NEAR(c->h, vague, o->h))
 			winlist_append(tiles, w, NULL);
@@ -2367,7 +2403,7 @@ client_over_there_ish(client * c, int direction)
 	}
 
 	consider = clients_partly_visible(
-		&zone, current_tag | c->cache->tags, None);
+		&zone, get_current_tag() | c->cache->tags, None);
 
 	m = NULL;
 	// client that overlaps preferred
@@ -2742,6 +2778,7 @@ client_toggle_tag(client *c, unsigned int tag, int flash)
 	// this is a bit of a fudge as we can have windows on multiple
 	// tags/desktops, without being specifically sticky... oh well.
 	d = tag_to_desktop(c->cache->tags);
+	fprintf(stderr, "d: <%d>, t: <%d>\n", d, c->cache->tags);
 	window_set_cardinal_prop(c->window, netatoms[_NET_WM_DESKTOP], &d, 1);
 }
 
@@ -2752,6 +2789,9 @@ client_find(char *pattern)
 	int	 i;
 	Window	 w;
 	client	*c = NULL, *found = NULL;
+	workarea mon;
+
+	monitor_active(&mon);
 
 	if (!pattern)
 		return None;
@@ -2762,15 +2802,16 @@ client_find(char *pattern)
 	config_rules = rule->next;
 
 	// first, try in current_tag only
-	tag_descend(i, w, c, current_tag)
-	    if (client_rule_match(c, rule)) {
+	tag_descend(i, w, c, get_current_tag())
+	    if (client_rule_match(c, rule) &&
+		client_on_monitor(c, &mon)) {
 		found = c;
 		break;
 	}
 	// look for something minimized or shaded
 	if (!found)
 		clients_descend(windows_minimized, i, w, c)
-		    if (c->cache->tags & current_tag
+		    if (c->cache->tags & get_current_tag()
 		    && client_rule_match(c, rule)) {
 			found = c;
 			client_restore(c);
@@ -2778,7 +2819,7 @@ client_find(char *pattern)
 		}
 	if (!found)
 		clients_descend(windows_shaded, i, w, c)
-		    if (c->cache->tags & current_tag
+		    if (c->cache->tags & get_current_tag()
 		    && client_rule_match(c, rule)) {
 			found = c;
 			client_restore(c);
@@ -3008,8 +3049,8 @@ client_rules_tags(client * c)
 void
 client_rules_moveresize_post(client * c)
 {
-	unsigned int	 tag = current_tag;
-	current_tag = desktop_to_tag(tag_to_desktop(c->cache->tags));
+	unsigned int	 tag = get_current_tag();
+	tag_set_current(desktop_to_tag(tag_to_desktop(c->cache->tags)));
 	if (client_rule(c, RULE_SNAPRIGHT))
 		client_snapto(c, SNAPRIGHT);
 	if (client_rule(c, RULE_SNAPLEFT))
@@ -3037,7 +3078,7 @@ client_rules_moveresize_post(client * c)
 		client_vuntile(c);
 	if (client_rule(c, RULE_VTILE))
 		client_vtile(c);
-	current_tag = tag;
+	//tag_set_current(tag);
 }
 
 // check and apply all possible rules to a client

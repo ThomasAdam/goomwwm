@@ -49,26 +49,58 @@ desktop_to_tag(unsigned int desktop)
 void
 tag_set_current(unsigned int tag)
 {
-	current_tag = tag;
-	unsigned long d = tag_to_desktop(current_tag);
+	workarea	 mon;
+
+	/* Get the active monitor. */
+	monitor_active(&mon);
+	mon.current_tag = tag;
+
+	fprintf(stderr, "TAG SET: mon: %d, tag: %u\n", mon.num, mon.current_tag);
+
+	unsigned long d = tag_to_desktop(get_current_tag());
 	window_set_cardinal_prop(root, netatoms[_NET_CURRENT_DESKTOP], &d, 1);
+}
+
+unsigned int
+get_current_tag(void)
+{
+	workarea	 mon;
+
+	/* Get the active monitor. */
+	monitor_active(&mon);
+
+	/* Get the tag for this monitor. */
+	fprintf(stderr, "TAG GET: mon: <%d>, tag: <%u>\n", mon.num, mon.current_tag);
+	return (mon.current_tag);
 }
 
 // raise all windows in a tag
 void
 tag_raise(unsigned int tag)
 {
-	int i, found = 0, shaded = 0;
-	Window w;
-	client *c;
+	int	 i, found = 0, shaded = 0;
+	Window	 w;
+	client	*c;
 	winlist *stack;
+	workarea mon;
+
+	// Get the active monitor.  When we come to switch tags, we treat the
+	// tag switching as a workarea, and reassign the tags back to the
+	// monitor structure.
+	//
+	// The monitor holds the reference to which tag it's using, and a
+	// monitor is derived from the client which we're going to using.
+	monitor_active(&mon);
 
 	// if this tag was previously hidden, reveal it
-	clients_ascend(windows_shaded, i, w, c)
-	    if (c->manage && c->cache->tags & tag) {
-		client_reveal(c);
-		shaded++;
+	clients_ascend(windows_shaded, i, w, c) {
+		if (c->manage && c->cache->tags & tag
+			&& client_on_monitor(c, &mon)) {
+			client_reveal(c);
+			shaded++;
+		}
 	}
+
 	if (shaded) {
 		XSync(display, False);
 		reset_cache_xattr();
@@ -79,29 +111,41 @@ tag_raise(unsigned int tag)
 	stack = winlist_new();
 
 	// locate windows with _NET_WM_STATE_ABOVE and _NET_WM_STATE_STICKY
-	managed_descend(i, w, c)
+	managed_descend(i, w, c) {
 	    if (winlist_find(stack, w) < 0 && c->visible && c->trans == None
 	    && client_has_state(c, netatoms[_NET_WM_STATE_ABOVE])
-	    && client_has_state(c, netatoms[_NET_WM_STATE_STICKY]))
+	    && client_has_state(c, netatoms[_NET_WM_STATE_STICKY])
+	    && client_on_monitor(c, &mon))
 		client_stack_family(c, stack);
+	}
+
 	// locate windows with _NET_WM_STATE_ABOVE in this tag
-	tag_descend(i, w, c, tag)
-	    if (winlist_find(stack, w) < 0 && c->visible && c->trans == None
-	    && client_has_state(c, netatoms[_NET_WM_STATE_ABOVE])) {
-		client_stack_family(c, stack);
-		found++;
+	tag_descend(i, w, c, tag) {
+		if (winlist_find(stack, w) < 0 && c->visible && c->trans == None
+		&& client_has_state(c, netatoms[_NET_WM_STATE_ABOVE])
+		&& client_on_monitor(c, &mon)) {
+			client_stack_family(c, stack);
+			found++;
+		}
 	}
+
 	// locate _NET_WM_WINDOW_TYPE_DOCK windows
-	clients_descend(windows_in_play(), i, w, c)
+	clients_descend(windows_in_play(), i, w, c) {
 	    if (winlist_find(stack, w) < 0 && c->visible && c->trans == None
-	    && c->type == netatoms[_NET_WM_WINDOW_TYPE_DOCK])
+	    && c->type == netatoms[_NET_WM_WINDOW_TYPE_DOCK]
+	    && client_on_monitor(c, &mon))
 		client_stack_family(c, stack);
-	// locate all other windows in the tag
-	tag_descend(i, w, c, tag)
-	    if (winlist_find(stack, w) < 0 && c->trans == None) {
-		client_stack_family(c, stack);
-		found++;
 	}
+
+	// locate all other windows in the tag
+	tag_descend(i, w, c, tag) {
+		if (winlist_find(stack, w) < 0 && c->trans == None
+		    && client_on_monitor(c, &mon)) {
+			client_stack_family(c, stack);
+			found++;
+		}
+	}
+
 	// raise the top window in the stack
 	if (stack->len)
 		XRaiseWindow(display, stack->array[0]);
@@ -115,10 +159,16 @@ tag_raise(unsigned int tag)
 		tag_only(tag);
 
 	// focus the last-focused client in the tag
-	clients_descend(windows_activated, i, w, c) if (c->cache->tags & tag) {
-		client_activate(c, RAISE, WARPDEF);
-		break;
+	clients_descend(windows_activated, i, w, c) {
+		if (c->cache->tags & tag &&
+	    	    client_on_monitor(c, &mon)) {
+			client_activate(c, RAISE, WARPDEF);
+			break;
+		}
 	}
+
+	tag_set_current(tag);	
+
 	// in case no windows are in the tag, show some activity
 	if (found)
 		notice("Tag %d", tag_to_desktop(tag) + 1);
@@ -130,34 +180,58 @@ tag_raise(unsigned int tag)
 void
 tag_auto_switch()
 {
-	client *c = client_active(0);
-	if (c && c->cache->tags && !(c->cache->tags & current_tag)) {
-		int i, n = 0;
-		Window w;
-		client *o;
-		tag_descend(i, w, o, current_tag) n++;
-		if (!n)
-			tag_raise(desktop_to_tag(tag_to_desktop(c->cache->
-				    tags)));
+	client	*c = client_active(0);
+	workarea mon;
+
+	monitor_active(&mon);
+
+	if (c && c->cache->tags && !(c->cache->tags & get_current_tag())
+		&& client_on_monitor(c, &mon)) {
+
+		int	 i, n = 0;
+		Window	 w;
+		client	*o;
+		tag_descend(i, w, o, get_current_tag()) {
+			if (client_on_monitor(o, &mon))
+				n++;
+		}
+		
+		if (!n) {
+			tag_raise(desktop_to_tag(
+				tag_to_desktop(c->cache-> tags)));
+		}
 	}
 }
 
 void
 tag_only(unsigned int tag)
 {
-	int i;
-	Window w;
-	client *c;
-	managed_descend(i, w, c)
-	    if (!(c->cache->tags & tag))
+	int	 i;
+	Window	 w;
+	client	*c;
+	workarea mon;
+
+	monitor_active(&mon);
+
+	managed_descend(i, w, c) {
+	    if (!(c->cache->tags & tag) &&
+		client_on_monitor(c, &mon))
 		client_shade(c);
+	}
 }
 
 void
 tag_close(unsigned int tag)
 {
-	int i;
-	Window w;
-	client *c;
-	tag_descend(i, w, c, tag) client_close(c);
+	int	 i;
+	Window	 w;
+	client	*c;
+	workarea mon;
+
+	monitor_active(&mon);
+
+	tag_descend(i, w, c, tag) {
+		if (client_on_monitor(c, &mon))
+			client_close(c);
+	}
 }

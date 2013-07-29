@@ -39,8 +39,6 @@ const char *atom_names[] = {
 
 char *empty = "";
 
-unsigned int current_tag = TAG1;
-
 winrulemap rulemap[] = {
 	{ "tag1", TAG1 },
 	{ "tag2", TAG2 },

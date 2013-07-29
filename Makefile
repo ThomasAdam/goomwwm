@@ -1,4 +1,4 @@
-CFLAGS?=-Wall -Os -D_GNU_SOURCE
+CFLAGS?=-Wall -O0 -D_GNU_SOURCE -g -ggdb
 LDADD?= $(shell pkg-config --cflags --libs x11 xinerama xft) -I. -iquote.
 
 SRC= $(shell echo *.c)

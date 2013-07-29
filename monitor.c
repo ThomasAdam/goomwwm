@@ -49,6 +49,10 @@ monitor_dimensions(int x, int y, workarea * mon)
 					mon->y = info[i].y_org;
 					mon->w = info[i].width;
 					mon->h = info[i].height;
+
+					mon->current_tag = TAG1;
+					mon->num = i;
+
 					break;
 				}
 			}

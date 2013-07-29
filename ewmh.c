@@ -91,7 +91,7 @@ ewmh_desktop_list()
 	view[1] = 0;
 	geo[0] = attr->width;	//DisplayWidth(display, XScreenNumberOfScreen(attr->screen));
 	geo[1] = attr->height;	//DisplayHeight(display, XScreenNumberOfScreen(attr->screen));
-	desktop = tag_to_desktop(current_tag);
+	desktop = tag_to_desktop(get_current_tag());
 
 	window_set_cardinal_prop(root, netatoms[_NET_NUMBER_OF_DESKTOPS],
 	    &desktops, 1);

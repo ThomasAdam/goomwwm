@@ -41,6 +41,7 @@ handle_keypress(XEvent * ev)
 	unsigned int	 state = ev->xkey.state & ~(LockMask | NumlockMask);
 	client		*c = NULL;
 	int		 i, reset_prefix = 1, reset_quit = 1;
+	int		 switch_tag; 
 	
 	while (XCheckTypedEvent(display, KeyPress, ev));
 	
@@ -98,14 +99,18 @@ handle_keypress(XEvent * ev)
 		tag_raise(1 << i);
 
 	// tag cycling
-	else if (ISKEY(KEY_TAGNEXT))
-		tag_raise(current_tag & TAG9 ? TAG1 : current_tag << 1);
-	else if (ISKEY(KEY_TAGPREV))
-		tag_raise(current_tag & TAG1 ? TAG9 : current_tag >> 1);
-	else if (ISKEY(KEY_TAGONLY))
-		tag_only(current_tag);
+	else if (ISKEY(KEY_TAGNEXT)) {
+		switch_tag = get_current_tag() & TAG9 ? TAG1 : get_current_tag() << 1;
+		fprintf(stderr, "TAG: <<%u>>\n", switch_tag);
+		tag_raise(switch_tag);
+	} else if (ISKEY(KEY_TAGPREV)) {
+		switch_tag = get_current_tag() & TAG1 ? TAG9 : get_current_tag() >> 1;
+		fprintf(stderr, "TAG: <<%u>>\n", switch_tag);
+		tag_raise(switch_tag);
+	} else if (ISKEY(KEY_TAGONLY))
+		tag_only(get_current_tag());
 	else if (ISKEY(KEY_TAGCLOSE))
-		tag_close(current_tag);
+		tag_close(get_current_tag());
 
 	else
 		// following only relevant with a focused window
@@ -206,7 +211,7 @@ handle_keypress(XEvent * ev)
 
 		// place client in current tag
 		else if (ISKEY(KEY_TAG)) {
-			client_toggle_tag(c, current_tag, FLASH);
+			client_toggle_tag(c, get_current_tag(), FLASH);
 			ewmh_client_list();
 		}
 		// place client in other tags
@@ -219,7 +224,7 @@ handle_keypress(XEvent * ev)
 		else
 			// cycle through windows with same tag
 		if (ISKEY(KEY_TSWITCH))
-			client_switcher(current_tag);
+			client_switcher(get_current_tag());
 		else
 			// Page Up/Down rapidly moves the active window through 4 sizes
 		if (!client_has_state(c,
@@ -891,7 +896,7 @@ handle_maprequest(XEvent * ev)
 		// default to current tag
 		client_rules_tags(c);
 		if (!c->cache->tags)
-			client_toggle_tag(c, current_tag, NOFLASH);
+			client_toggle_tag(c, get_current_tag(), NOFLASH);
 
 		// specifying a non-active monitor will center the window there
 		// this overrides PLACEPOINTER!
@@ -943,7 +948,7 @@ handle_mapnotify(XEvent * ev)
 		} else
 			// apply rules to new windows
 		{		// initial raise does not check -raisemode
-			if ((c->cache->tags & current_tag
+			if ((c->cache->tags & get_current_tag()
 				&& config_map_mode == MAPSTEAL
 				&& !client_rule(c, RULE_BLOCK))
 			    || client_rule(c, RULE_STEAL))
@@ -952,8 +957,8 @@ handle_mapnotify(XEvent * ev)
 				// if on current tag, place new window under active window and next in activate order by default
 				// if specifically raised, raise window and leave second in activate order
 				// if specifically lowered, lower window and place last in activate order
-				if (c->cache->tags & current_tag
-				    && (a = client_active(current_tag))
+				if (c->cache->tags & get_current_tag()
+				    && (a = client_active(get_current_tag()))
 				    && a->window != c->window) {
 					winlist_forget(windows_activated,
 					    c->window);
@@ -1036,7 +1041,7 @@ handle_unmapnotify(XEvent * ev)
 	// see if this was the active window, and if so, find someone else to take the job
 	if (was_active) {
 		if (ev->xunmap.event == root) {
-			if (!client_active(current_tag))
+			if (!client_active(get_current_tag()))
 				XSetInputFocus(display, PointerRoot,
 				    RevertToPointerRoot, CurrentTime);
 			ewmh_client_list();
@@ -1219,7 +1224,7 @@ handle_enternotify(XEvent * ev)
 	if (c && c->visible && c->manage && !c->active
 	    && (config_focus_mode == FOCUSSLOPPY
 		|| (config_focus_mode == FOCUSSLOPPYTAG
-		    && c->cache->tags & current_tag))) {
+		    && c->cache->tags & get_current_tag()))) {
 		event_log("EnterNotify", c->window);
 		event_client_dump(c);
 		client_activate(c, RAISEDEF, WARPDEF);

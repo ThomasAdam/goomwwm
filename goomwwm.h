@@ -269,6 +269,7 @@ typedef struct {
 
 #define tag_ascend(i,w,c,t) managed_ascend(i, w, c) if (!(t) || (c)->cache->tags & (t))
 #define tag_descend(i,w,c,t) managed_descend(i, w, c) if (!(t) || (c)->cache->tags & (t))
+#define client_on_monitor(c, m) (c)->monitor.num == (m)->num
 
 // window lists
 typedef struct {
@@ -279,7 +280,9 @@ typedef struct {
 
 // usable space on a monitor
 typedef struct {
-	short x, y, w, h, l, r, t, b;
+	short		 x, y, w, h, l, r, t, b;
+	unsigned int	 current_tag;
+	int		 num;
 } workarea;
 
 // snapshot a window's size/pos and EWMH state
@@ -499,7 +502,6 @@ Window supporting;
 
 // tracking windows
 winlist *windows, *windows_activated, *windows_minimized, *windows_shaded;
-extern unsigned int current_tag; // = TAG1;
 
 // caches used to reduce X server round trips
 winlist *cache_client;
