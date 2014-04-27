@@ -793,8 +793,10 @@ handle_configurenotify(XEvent * ev)
 		XWindowAttributes *attr = window_get_attributes(root);
 		int i;
 		Window w;
+		workarea *m = NULL;
+		monitor_of_pointer(m);
 		// find all windows and ensure they're visible in the new screen layout
-		managed_ascend(i, w, c) {
+		managed_ascend(i, w, c, m) {
 			client_extended_data(c);
 			// client_moveresize() will handle fine tuning bumping the window on-screen
 			// all we have to do is get x/y in the right ballpark
@@ -1242,8 +1244,11 @@ handle_expose(XEvent * ev)
 	int i;
 	Window w;
 	client *c;
+	workarea *m = NULL;
 
-	managed_ascend(i, w, c)
+	monitor_of_pointer(m);
+
+	managed_ascend(i, w, c, m)
 	    if (c->visible && c->decorate
 	    && ((c->cache->frame && c->cache->frame->window == ev->xany.window)
 		|| (c->cache->title

@@ -35,14 +35,17 @@ ewmh_client_list()
 	int	 i;
 	Window	 w;
 	client	*c;
+	workarea *m = NULL;
 
 	XSync(display, False);
 
 	// this often happens after we've made changes. refresh
 	reset_cache_inplay();
 
+	monitor_of_pointer(m);
+
 	// windows_in_play() returns the stacking order. windows_activated *MAY NOT* have the same order
-	managed_ascend(i, w, c) if (!client_has_state(c,
+	managed_ascend(i, w, c, m) if (!client_has_state(c,
 		netatoms[_NET_WM_STATE_SKIP_TASKBAR]))
 		winlist_append(relevant, w, NULL);
 	XChangeProperty(display, root, netatoms[_NET_CLIENT_LIST_STACKING],

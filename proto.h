@@ -141,6 +141,7 @@ char *prompt(char *ps);
 void monitor_dimensions(int x, int y, workarea *mon);
 void monitor_dimensions_struts(int x, int y, workarea *mon);
 void monitor_active(workarea *mon);
+void monitor_of_pointer(workarea *mon);
 
 /* rule.c */
 int rule_parse(char *rulestr);

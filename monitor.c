@@ -136,7 +136,6 @@ monitor_dimensions_struts(int x, int y, workarea *mon)
 void
 monitor_active(workarea *mon)
 {
-	int	 x, y;
 	client	*c = client_active(0);
 	if (c) {
 		client_extended_data(c);
@@ -144,9 +143,18 @@ monitor_active(workarea *mon)
 		return;
 	}
 
-	if (pointer_get(&x, &y)) {
-		monitor_dimensions_struts(x, y, mon);
+	monitor_of_pointer(mon);
+	if (mon != NULL)
 		return;
-	}
+
 	monitor_dimensions_struts(0, 0, mon);
+}
+
+void
+monitor_of_pointer(workarea *mon)
+{
+	int		 x, y;
+
+	if (pointer_get(&x, &y))
+		monitor_dimensions_struts(x, y, mon);
 }

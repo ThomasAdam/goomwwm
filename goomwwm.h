@@ -261,14 +261,14 @@ typedef struct {
 #define winlist_ascend(l,i,w) for ((i) = 0; (i) < (l)->len && (((w) = (l)->array[i]) || 1); (i)++)
 #define winlist_descend(l,i,w) for ((i) = (l)->len-1; (i) >= 0 && (((w) = (l)->array[i]) || 1); (i)--)
 
-#define clients_ascend(l,i,w,c) winlist_ascend(l,i,w) if (((c) = client_create(w)))
-#define clients_descend(l,i,w,c) winlist_descend(l,i,w) if (((c) = client_create(w)))
+#define clients_ascend(l,i,w,c,m) winlist_ascend(l,i,w) if (((c) = client_create(w)) && ((m) == &((c)->monitor)))
+#define clients_descend(l,i,w,c,m) winlist_descend(l,i,w) if (((c) = client_create(w)) && ((m) == &((c)->monitor)))
 
-#define managed_ascend(i,w,c) clients_ascend(windows_in_play(),i,w,c) if ((c)->manage && (c)->visible)
-#define managed_descend(i,w,c) clients_descend(windows_in_play(),i,w,c) if ((c)->manage && (c)->visible)
+#define managed_ascend(i,w,c,m) clients_ascend(windows_in_play(),i,w,c,m) if ((c)->manage && (c)->visible && ((m) ==  &((c)->monitor)))
+#define managed_descend(i,w,c,m) clients_descend(windows_in_play(),i,w,c,m) if ((c)->manage && (c)->visible && ((m) == &((c)->monitor)))
 
-#define tag_ascend(i,w,c,t) managed_ascend(i, w, c) if (!(t) || (c)->cache->tags & (t))
-#define tag_descend(i,w,c,t) managed_descend(i, w, c) if (!(t) || (c)->cache->tags & (t))
+#define tag_ascend(i,w,c,t,m) managed_ascend(i, w, c, m) if (!(t) || (((c)->cache->tags & (t))) && (((m) == &((c)->monitor))))
+#define tag_descend(i,w,c,t,m) managed_descend(i, w, c, m) if (!(t) || (((c)->cache->tags & (t))) && (((m) == &((c)->monitor))))
 
 // window lists
 typedef struct {
@@ -507,6 +507,7 @@ winlist *cache_xattr;
 winlist *cache_inplay;
 
 workarea cache_monitor[6];
+workarea *active_monitor;
 
 typedef struct {
 	unsigned long flags, functions, decorations;
