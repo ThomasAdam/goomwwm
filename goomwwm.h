@@ -261,14 +261,14 @@ typedef struct {
 #define winlist_ascend(l,i,w) for ((i) = 0; (i) < (l)->len && (((w) = (l)->array[i]) || 1); (i)++)
 #define winlist_descend(l,i,w) for ((i) = (l)->len-1; (i) >= 0 && (((w) = (l)->array[i]) || 1); (i)--)
 
-#define clients_ascend(l,i,w,c,m) winlist_ascend(l,i,w) if (((c) = client_create(w)) && ((m) == &((c)->monitor)))
-#define clients_descend(l,i,w,c,m) winlist_descend(l,i,w) if (((c) = client_create(w)) && ((m) == &((c)->monitor)))
+#define clients_ascend(l,i,w,c,m) winlist_ascend(l,i,w) if (((c) = client_create(w)) && (m)->screen == (c)->monitor.screen)
+#define clients_descend(l,i,w,c,m) winlist_descend(l,i,w) if (((c) = client_create(w)) && (m)->screen == (c)->monitor.screen)
 
-#define managed_ascend(i,w,c,m) clients_ascend(windows_in_play(),i,w,c,m) if ((c)->manage && (c)->visible && ((m) ==  &((c)->monitor)))
-#define managed_descend(i,w,c,m) clients_descend(windows_in_play(),i,w,c,m) if ((c)->manage && (c)->visible && ((m) == &((c)->monitor)))
+#define managed_ascend(i,w,c,m) clients_ascend(windows_in_play(),i,w,c,m) if ((c)->manage && (c)->visible && (m)->screen == (c)->monitor.screen)
+#define managed_descend(i,w,c,m) clients_descend(windows_in_play(),i,w,c,m) if ((c)->manage && (c)->visible && (m)->screen == (c)->monitor.screen)
 
-#define tag_ascend(i,w,c,t,m) managed_ascend(i, w, c, m) if (!(t) || (((c)->cache->tags & (t))) && (((m) == &((c)->monitor))))
-#define tag_descend(i,w,c,t,m) managed_descend(i, w, c, m) if (!(t) || (((c)->cache->tags & (t))) && (((m) == &((c)->monitor))))
+#define tag_ascend(i,w,c,t,m) managed_ascend(i, w, c, m) if (!(t) || (((c)->cache->tags & (t))) && (m)->screen == (c)->monitor.screen)
+#define tag_descend(i,w,c,t,m) managed_descend(i, w, c, m) if (!(t) || (((c)->cache->tags & (t))) && (m)->screen == (c)->monitor.screen)
 
 // window lists
 typedef struct {
@@ -280,6 +280,7 @@ typedef struct {
 // usable space on a monitor
 typedef struct {
 	short x, y, w, h, l, r, t, b;
+	int screen;
 } workarea;
 
 // snapshot a window's size/pos and EWMH state

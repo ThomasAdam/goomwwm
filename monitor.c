@@ -49,6 +49,7 @@ monitor_dimensions(int x, int y, workarea * mon)
 					mon->y = info[i].y_org;
 					mon->w = info[i].width;
 					mon->h = info[i].height;
+					mon->screen = info[i].screen_number;
 					break;
 				}
 			}
@@ -154,6 +155,7 @@ void
 monitor_of_pointer(workarea *mon)
 {
 	int		 x, y;
+
 
 	if (pointer_get(&x, &y))
 		monitor_dimensions_struts(x, y, mon);

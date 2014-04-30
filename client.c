@@ -482,11 +482,11 @@ client_warp_check(client * c, int x, int y)
 	int	 i, ok = 1;
 	Window	 w;
 	client	*o;
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
-	managed_descend(i, w, o, m) {
+	managed_descend(i, w, o, &m) {
 		if (!ok || w == c->window)
 			break;
 		if (INTERSECT(o->x, o->y, o->w, o->h, x, y, 1, 1))
@@ -744,9 +744,9 @@ client_moveresize(client *c, unsigned int flags, int fx, int fy, int fw,
 			winlist *visible =
 			    clients_partly_visible(&monitor, 0, c->window);
 
-			workarea *m = NULL;
-			monitor_of_pointer(m);
-			clients_descend(visible, i, win, o, m) {
+			workarea m;
+			monitor_of_pointer(&m);
+			clients_descend(visible, i, win, o, &m) {
 				if (!xsnap && NEAR(o->x, vague, fx)) {
 					fx = o->x;
 					xsnap = 1;
@@ -805,10 +805,10 @@ client_moveresize(client *c, unsigned int flags, int fx, int fy, int fw,
 			winlist *visible =
 			    clients_partly_visible(&monitor, 0, c->window);
 
-			workarea *m = NULL;
-			monitor_of_pointer(m);
+			workarea m;
+			monitor_of_pointer(&m);
 
-			clients_descend(visible, i, win, o, m) {
+			clients_descend(visible, i, win, o, &m) {
 				if (!xsnap && NEAR(o->x, vague, fx + fw)) {
 					fw = o->x - fx;
 					xsnap = 1;
@@ -1020,14 +1020,14 @@ clients_fully_visible(workarea *zone, unsigned int tag, Window ignore)
 	workarea	*allregions;
 	winlist *hits = winlist_new();
 	winlist *inplay = windows_in_play();
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// list of coords/sizes for all windows on this desktop
 	allregions = allocate_clear(sizeof(workarea) * inplay->len);
 
-	tag_descend(i, win, o, tag, m) {
+	tag_descend(i, win, o, tag, &m) {
 		client_extended_data(o);
 		// only concerned about windows in the zone
 		if (ignore != o->window
@@ -1073,13 +1073,13 @@ clients_partly_visible(workarea *zone, unsigned int tag, Window ignore)
 	client		*o;
 	winlist		*hits = winlist_new();
 	winlist		*inplay = windows_in_play();
-	workarea	*allregions, *m = NULL;
+	workarea	*allregions, m;
 	
 	// list of coords/sizes for all windows on this desktop
 	allregions = allocate_clear(sizeof(workarea) * inplay->len);
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
-	tag_descend(i, win, o, tag, m) {
+	tag_descend(i, win, o, tag, &m) {
 		client_extended_data(o);
 		// only concerned about windows in the zone
 		if (ignore != o->window
@@ -1136,12 +1136,12 @@ client_expand(client * c, int directions, int x1, int y1, int w1, int h1,
 	Window		 win;
 	client		*o;
 	winlist		*visible;
-	workarea	*regions, *m = NULL;
+	workarea	*regions, m;
 	winundo		*undo;
 	int		 i, n, relevant, x, y, w, h;
 
 	client_extended_data(c);
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// hlock/vlock reduce the area we should look at
 	if (c->cache->hlock) {
@@ -1169,7 +1169,7 @@ client_expand(client * c, int directions, int x1, int y1, int w1, int h1,
 	regions = allocate_clear(sizeof(workarea) * visible->len);
 
 	n = 0, relevant = visible->len;
-	clients_descend(visible, i, win, o, m) {
+	clients_descend(visible, i, win, o, &m) {
 		client_extended_data(o);
 		if ((mw || mh)
 		    && !INTERSECT(o->x, o->y, o->w, o->h, mx, my, mw, mh))
@@ -1273,13 +1273,13 @@ client_snapto(client *c, int direction)
 {
 	Window		 win;
 	winlist		*visible;
-	workarea	*regions, *m = NULL;
+	workarea	*regions, m;
 	client		*o;
 	int		 i, n, relevant;
 	int		 x, y, w, h;
 
 	client_extended_data(c);
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// hlock/vlock may block this
 	if (c->cache->hlock && (direction == SNAPLEFT
@@ -1298,7 +1298,7 @@ client_snapto(client *c, int direction)
 
 	n = 0;
 	relevant = visible->len;
-	clients_descend(visible, i, win, o, m) {
+	clients_descend(visible, i, win, o, &m) {
 		client_extended_data(o);
 		regions[n].x = o->x;
 		regions[n].y = o->y;
@@ -1501,9 +1501,9 @@ client_stack_family(client *c, winlist *stack)
 	int	 i;
 	Window	 w;
 	client	*a = NULL;
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// if this is a transient window, find the main app
 	if (c->trans && winlist_find(stack, c->trans) < 0) {
@@ -1514,7 +1514,7 @@ client_stack_family(client *c, winlist *stack)
 	// make sure this window does not trigger recursion
 	winlist_append(stack, c->window, NULL);
 	// locate all visible transient windows for this app
-	managed_descend(i, w, a, m)
+	managed_descend(i, w, a, &m)
 	    if (winlist_find(stack, w) < 0 && a->trans == c->window)
 		client_stack_family(a, stack);
 	// move this window to end (bottom) of stack
@@ -1532,13 +1532,13 @@ client_raise(client *c, int priority)
 	Window	 w;
 	client	*o;
 	winlist	*stack;
-	workarea *m = NULL;
+	workarea m;
 
 	if (!priority && client_has_state(c, netatoms[_NET_WM_STATE_BELOW]))
 		return;
 
 	stack = winlist_new();
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// priority gets us raised without anyone above us, regardless. eg _NET_WM_STATE_FULLSCREEN+focus
 	if (!priority) {
@@ -1548,20 +1548,20 @@ client_raise(client *c, int priority)
 			client_stack_family(c, stack);
 
 		// locate windows with both _NET_WM_STATE_STICKY and _NET_WM_STATE_ABOVE
-		managed_descend(i, w, o, m)
+		managed_descend(i, w, o, &m)
 		    if (winlist_find(stack, w) < 0 && o->visible
 		    && o->trans == None
 		    && client_has_state(o, netatoms[_NET_WM_STATE_ABOVE])
 		    && client_has_state(o, netatoms[_NET_WM_STATE_STICKY]))
 			client_stack_family(o, stack);
 		// locate windows in the current_tag with _NET_WM_STATE_ABOVE
-		tag_descend(i, w, o, current_tag, m)
+		tag_descend(i, w, o, current_tag, &m)
 		    if (winlist_find(stack, w) < 0 && o->visible
 		    && o->trans == None
 		    && client_has_state(o, netatoms[_NET_WM_STATE_ABOVE]))
 			client_stack_family(o, stack);
 		// locate _NET_WM_WINDOW_TYPE_DOCK windows
-		clients_descend(windows_in_play(), i, w, o, m)
+		clients_descend(windows_in_play(), i, w, o, &m)
 		    if (winlist_find(stack, w) < 0 && o->visible
 		    && c->trans == None
 		    && o->type == netatoms[_NET_WM_WINDOW_TYPE_DOCK])
@@ -1606,15 +1606,15 @@ client_lower(client *c, int priority)
 	int	 i;
 	Window	 w;
 	client	*o, *under;
-	workarea *m = NULL;
+	workarea m;
 
 	if (!priority && client_has_state(c, netatoms[_NET_WM_STATE_ABOVE]))
 		return;
 
 	// locate the lowest window in the tag
 	under = NULL;
-	monitor_of_pointer(m);
-	tag_descend(i, w, o, current_tag, m)
+	monitor_of_pointer(&m);
+	tag_descend(i, w, o, current_tag, &m)
 	    if (o->trans == None && o->window != c->window
 	    && !client_has_state(o, netatoms[_NET_WM_STATE_BELOW]))
 		under = o;
@@ -1827,12 +1827,12 @@ client_activate(client *c, int raise, int warp)
 	int	i;
 	Window	w;
 	client *o;
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// deactivate everyone else
-	clients_ascend(windows_in_play(), i, w, o, m) if (w != c->window)
+	clients_ascend(windows_in_play(), i, w, o, &m) if (w != c->window)
 		client_deactivate(o, c);
 
 	if (c->minimized)
@@ -1906,27 +1906,27 @@ client_active(unsigned int tag)
 	int	 i;
 	Window	 w;
 	client	*c = NULL, *o;
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// look for a visible, previously activated window in the current tag
 	if (tag)
-		clients_descend(windows_activated, i, w, o, m)
+		clients_descend(windows_activated, i, w, o, &m)
 		    if (o->manage && o->visible && o->cache->tags & tag) {
 			c = o;
 			break;
 		}
 	// look for a visible, previously activated window anywhere
 	if (!c)
-		clients_descend(windows_activated, i, w, o, m)
+		clients_descend(windows_activated, i, w, o, &m)
 		    if (o->manage && o->visible) {
 			c = o;
 			break;
 		}
 	// otherwise look for any visible, manageable window
 	if (!c)
-		managed_descend(i, w, o, m) {
+		managed_descend(i, w, o, &m) {
 		c = o;
 		break;
 		}
@@ -2110,7 +2110,7 @@ clients_tiled_horz_with(client *c)
 	Window		 w;
 	client		*o;
 	winlist		*tiles = winlist_new();
-	workarea	*m = NULL;
+	workarea	m;
 
 	winlist_append(tiles, c->window, NULL);
 	vague = MAX(c->monitor.w / 100, c->monitor.h / 100);
@@ -2118,11 +2118,11 @@ clients_tiled_horz_with(client *c)
 	max_x = c->x + c->w;
 	tlen = 0;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	while (tlen != tiles->len) {
 		tlen = tiles->len;
-		tag_descend(i, w, o, c->cache->tags, m) {
+		tag_descend(i, w, o, c->cache->tags, &m) {
 			// window is not already found, and is on the same horizontal alignment
 			if (c->window != w && winlist_find(tiles, w) < 0
 			    && NEAR(c->y, vague, o->y)
@@ -2149,7 +2149,7 @@ clients_tiled_vert_with(client *c)
 	Window		 w;
 	client		*o;
 	winlist		*tiles = winlist_new();
-	workarea	*m = NULL;
+	workarea	m;
 
 	winlist_append(tiles, c->window, NULL);
 	vague = MAX(c->monitor.w / 100, c->monitor.h / 100);
@@ -2157,12 +2157,12 @@ clients_tiled_vert_with(client *c)
 	max_y = c->y + c->h;
 	tlen = 0;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// locate adjacent windows with the same tag, size, and vertical position
 	while (tlen != tiles->len) {
 		tlen = tiles->len;
-		tag_descend(i, w, o, c->cache->tags, m)
+		tag_descend(i, w, o, c->cache->tags, &m)
 		    // window is not already found, and is on the same vertical alignment
 		    if (c->window != w && winlist_find(tiles, w) < 0
 		    && NEAR(c->x, vague, o->x)
@@ -2186,11 +2186,11 @@ clients_tiled_with(client *c)
 	Window	 w, ww;
 	client	*o;
 	winlist *tiles = clients_tiled_horz_with(c);
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
-	clients_ascend(tiles, i, w, o, m) {
+	clients_ascend(tiles, i, w, o, &m) {
 		winlist *vtiles = clients_tiled_vert_with(o);
 		winlist_ascend(vtiles, j, ww) if (winlist_find(tiles, ww) < 0)
 			winlist_append(tiles, ww, NULL);
@@ -2207,14 +2207,14 @@ client_switch_to(client *c)
 	Window	 w;
 	client	*o;
 	winlist	*tiles;
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// smart tile mode detects windows tiled with the client and treats the whole group as one
 	if (config_tile_mode == TILESMART) {
 		tiles = clients_tiled_with(c);
-		clients_ascend(tiles, i, w, o, m) if (o->window != c->window)
+		clients_ascend(tiles, i, w, o, &m) if (o->window != c->window)
 			client_activate(o, RAISE, WARPDEF);
 		winlist_free(tiles);
 	}
@@ -2229,18 +2229,18 @@ client_cycle(client *c)
 	int	 i;
 	Window	 w;
 	client	*o;
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// find an intersecting client near the bottom of the stack to raise
-	tag_ascend(i, w, o, current_tag, m)
+	tag_ascend(i, w, o, current_tag, &m)
 	    if (w != c->window && clients_intersect(c, o)) {
 		client_switch_to(o);
 		return;
 	}
 
-	tag_ascend(i, w, o, c->cache->tags, m)
+	tag_ascend(i, w, o, c->cache->tags, &m)
 	    if (w != c->window && clients_intersect(c, o)) {
 		client_switch_to(o);
 		return;
@@ -2259,21 +2259,21 @@ client_htile(client *c)
 	winlist	*tiles = winlist_new();
 	Window	 w;
 	client	*o;
-	workarea *m = NULL;
+	workarea m;
 
 	winlist_append(tiles, c->window, NULL);
 	vague = MAX(c->monitor.w / 100, c->monitor.h / 100);
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// locate windows with same tag, size, and position
-	tag_descend(i, w, o, current_tag | c->cache->tags, m) if (c->window != w)
+	tag_descend(i, w, o, current_tag | c->cache->tags, &m) if (c->window != w)
 		if (NEAR(c->x, vague, o->x) && NEAR(c->y, vague, o->y)
 		    && NEAR(c->w, vague, o->w) && NEAR(c->h, vague, o->h))
 			winlist_append(tiles, w, NULL);
 	if (tiles->len > 1) {
 		width = c->w / tiles->len;
-		clients_ascend(tiles, i, w, o, m) {
+		clients_ascend(tiles, i, w, o, &m) {
 			client_commit(o);
 			client_remove_state(o,
 			    netatoms[_NET_WM_STATE_MAXIMIZED_HORZ]);
@@ -2291,20 +2291,20 @@ client_huntile(client *c)
 	int	 i, min_x, max_x;
 	Window	 w;
 	client	*o;
-	workarea *m = NULL;
+	workarea m;
 	
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 	client_extended_data(c);
 	winlist *tiles = clients_tiled_horz_with(c);
 	if (tiles->len > 1) {
 		min_x = c->x;
 		max_x = c->x + c->h;
-		clients_ascend(tiles, i, w, o, m) {
+		clients_ascend(tiles, i, w, o, &m) {
 			client_extended_data(o);
 			min_x = MIN(min_x, o->x);
 			max_x = MAX(max_x, o->x + o->w);
 		}
-		clients_ascend(tiles, i, w, o, m) {
+		clients_ascend(tiles, i, w, o, &m) {
 			client_commit(o);
 			client_remove_state(o,
 			    netatoms[_NET_WM_STATE_MAXIMIZED_HORZ]);
@@ -2325,20 +2325,20 @@ client_vtile(client *c)
 	Window	 w;
 	client	*o;
 	winlist	*tiles = winlist_new();
-	workarea *m = NULL;
+	workarea m;
 	
 	winlist_append(tiles, c->window, NULL);
 	vague = MAX(c->monitor.w / 100, c->monitor.h / 100);
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 	
 	// locate windows with same tag, size, and position
-	tag_descend(i, w, o, current_tag | c->cache->tags, m) if (c->window != w)
+	tag_descend(i, w, o, current_tag | c->cache->tags, &m) if (c->window != w)
 		if (NEAR(c->x, vague, o->x) && NEAR(c->y, vague, o->y)
 		    && NEAR(c->w, vague, o->w) && NEAR(c->h, vague, o->h))
 			winlist_append(tiles, w, NULL);
 	if (tiles->len > 1) {
 		height = c->h / tiles->len;
-		clients_ascend(tiles, i, w, o, m) {
+		clients_ascend(tiles, i, w, o, &m) {
 			client_commit(o);
 			client_remove_state(o,
 			    netatoms[_NET_WM_STATE_MAXIMIZED_VERT]);
@@ -2357,20 +2357,20 @@ client_vuntile(client *c)
 	Window	 w;
 	client	*o;
 	winlist	*tiles;
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 	client_extended_data(c);
 	tiles = clients_tiled_vert_with(c);
 	if (tiles->len > 1) {
 		min_y = c->y;
 		max_y = c->y + c->h;
-		clients_ascend(tiles, i, w, o, m) {
+		clients_ascend(tiles, i, w, o, &m) {
 			client_extended_data(o);
 			min_y = MIN(min_y, o->y);
 			max_y = MAX(max_y, o->y + o->h);
 		}
-		clients_ascend(tiles, i, w, o, m) {
+		clients_ascend(tiles, i, w, o, &m) {
 			client_commit(o);
 			client_remove_state(o,
 			    netatoms[_NET_WM_STATE_MAXIMIZED_HORZ]);
@@ -2389,11 +2389,11 @@ client_over_there_ish(client * c, int direction)
 	Window	 w;
 	client	*o, *m;
 	winlist	*consider;
-	workarea zone, *mon = NULL;
+	workarea zone, mon;
 
 	memset(&zone, 0, sizeof(workarea));
 	client_extended_data(c);
-	monitor_of_pointer(mon);
+	monitor_of_pointer(&mon);
 
 	if (direction == FOCUSLEFT) {
 		zone.x = 0 - large;
@@ -2425,7 +2425,7 @@ client_over_there_ish(client * c, int direction)
 
 	m = NULL;
 	// client that overlaps preferred
-	clients_descend(consider, i, w, o, mon) if (w != c->window && o->manage) {
+	clients_descend(consider, i, w, o, &mon) if (w != c->window && o->manage) {
 		client_extended_data(o);
 		overlap_x = OVERLAP(c->y, c->h, o->y, o->h);
 		overlap_y = OVERLAP(c->x, c->w, o->x, o->w);
@@ -2444,7 +2444,7 @@ client_over_there_ish(client * c, int direction)
 	}
 	// otherwise, the closest one
 	if (!m)
-		clients_descend(consider, i, w, o, mon) if (w != c->window
+		clients_descend(consider, i, w, o, &mon) if (w != c->window
 		    && o->manage) {
 			client_extended_data(o);
 			if (!m)
@@ -2548,12 +2548,12 @@ client_duplicate(client *c)
 	int	 i;
 	Window	 w;
 	client	*o;
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	client_commit(c);
-	tag_descend(i, w, o, 0, m)
+	tag_descend(i, w, o, 0, &m)
 	    if (c->window != w && clients_intersect(c, o)) {
 		client_moveresize(c, 0, o->x, o->y, o->w, o->h);
 		return;
@@ -2566,9 +2566,9 @@ client_minimize(client *c)
 	int	 i;
 	Window	 w;
 	client	*o;
-	workarea *m = NULL;
+	workarea m;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	XUnmapWindow(display, c->window);
 	if (c->decorate)
@@ -2582,7 +2582,7 @@ client_minimize(client *c)
 	c->visible = 0;
 
 	// also minimize any transients
-	managed_descend(i, w, o, m)
+	managed_descend(i, w, o, &m)
 	    if (o->trans == c->window && o->visible && !o->minimized
 	    && !o->shaded)
 		client_minimize(o);
@@ -2594,7 +2594,7 @@ client_restore(client *c)
 	int	 i;
 	Window	 w;
 	client	*o;
-	workarea *m = NULL;
+	workarea m;
 
 	XMapWindow(display, c->window);
 	if (c->decorate)
@@ -2608,8 +2608,8 @@ client_restore(client *c)
 	c->visible = 1;
 
 	// also restore any transients
-	monitor_of_pointer(m);
-	clients_descend(windows_minimized, i, w, o, m)
+	monitor_of_pointer(&m);
+	clients_descend(windows_minimized, i, w, o, &m)
 	    if (o->trans == c->window)
 		client_restore(o);
 }
@@ -2620,7 +2620,7 @@ client_shade(client * c)
 	int	 i;
 	Window	 w;
 	client	*o;
-	workarea *m = NULL;
+	workarea m;
 
 	XUnmapWindow(display, c->window);
 
@@ -2634,8 +2634,8 @@ client_shade(client * c)
 	c->visible = 0;
 
 	// also shade any transients
-	monitor_of_pointer(m);
-	managed_descend(i, w, o, m)
+	monitor_of_pointer(&m);
+	managed_descend(i, w, o, &m)
 	    if (o->trans == c->window && o->visible && !o->minimized
 	    && !o->shaded)
 		client_shade(o);
@@ -2647,13 +2647,13 @@ client_reveal(client * c)
 	int	 i;
 	Window   w;
 	client	*o;
-	workarea *m = NULL;
+	workarea m;
 
 	client_restore(c);
 
 	// also restore any transients
-	monitor_of_pointer(m);
-	clients_descend(windows_shaded, i, w, o, m)
+	monitor_of_pointer(&m);
+	clients_descend(windows_shaded, i, w, o, &m)
 	    if (o->trans == c->window)
 		client_restore(o);
 }
@@ -2671,12 +2671,13 @@ client_switcher(unsigned int tag)
 	Window	 w;
 	client	*c;
 	winlist *ids = winlist_new();
-	workarea *m = NULL;
+	workarea m;
 
 	/* TA:  Maybe use monitor_of_pointer() although the switcher should
 	 * operate across all monitors for now, until we can mark which monitor
 	 * is in use per client.
 	 */
+	monitor_of_pointer(&m);
 
 	classfield = 0;
 	maxtags = 0;
@@ -2696,7 +2697,7 @@ client_switcher(unsigned int tag)
 		if (type == 2)
 			l = windows_minimized;
 		// calc widths of wm_class and tag csv fields
-		clients_descend(l, i, w, c, m) {
+		clients_descend(l, i, w, c, &m) {
 			if (c->manage && (c->visible || c->minimized
 				|| c->shaded)
 			    && !client_has_state(c,
@@ -2737,7 +2738,7 @@ client_switcher(unsigned int tag)
 	lines = 0;
 	j = l = 0;
 	// build the actual list
-	clients_ascend(ids, i, w, c, m) {
+	clients_ascend(ids, i, w, c, &m) {
 		client_descriptive_data(c);
 		if (!tag || (c->cache && c->cache->tags & tag)) {
 			memset(tags, 0, 32);
@@ -2824,12 +2825,12 @@ client_find(char *pattern)
 	int	 i;
 	Window	 w;
 	client	*c = NULL, *found = NULL;
-	workarea *m = NULL;
+	workarea m;
 
 	if (!pattern)
 		return None;
 
-	monitor_of_pointer(m);
+	monitor_of_pointer(&m);
 
 	// use a tempoarary rule for searching
 	rule_parse(pattern);
@@ -2837,14 +2838,14 @@ client_find(char *pattern)
 	config_rules = rule->next;
 
 	// first, try in current_tag only
-	tag_descend(i, w, c, current_tag, m)
+	tag_descend(i, w, c, current_tag, &m)
 	    if (client_rule_match(c, rule)) {
 		found = c;
 		break;
 	}
 	// look for something minimized or shaded
 	if (!found)
-		clients_descend(windows_minimized, i, w, c, m)
+		clients_descend(windows_minimized, i, w, c, &m)
 		    if (c->cache->tags & current_tag
 		    && client_rule_match(c, rule)) {
 			found = c;
@@ -2852,7 +2853,7 @@ client_find(char *pattern)
 			break;
 		}
 	if (!found)
-		clients_descend(windows_shaded, i, w, c, m)
+		clients_descend(windows_shaded, i, w, c, &m)
 		    if (c->cache->tags & current_tag
 		    && client_rule_match(c, rule)) {
 			found = c;
@@ -2861,20 +2862,20 @@ client_find(char *pattern)
 		}
 	// failing that, search regardless of tag
 	if (!found)
-		managed_descend(i, w, c, m)
+		managed_descend(i, w, c, &m)
 		    if (client_rule_match(c, rule)) {
 			found = c;
 			break;
 		}
 	if (!found)
-		clients_descend(windows_minimized, i, w, c, m)
+		clients_descend(windows_minimized, i, w, c, &m)
 		    if (client_rule_match(c, rule)) {
 			found = c;
 			client_restore(c);
 			break;
 		}
 	if (!found)
-		clients_descend(windows_shaded, i, w, c, m)
+		clients_descend(windows_shaded, i, w, c, &m)
 		    if (client_rule_match(c, rule)) {
 			found = c;
 			client_restore(c);
