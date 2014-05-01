@@ -154,7 +154,7 @@ rulelist_apply(winrule * list)
 
 	monitor_of_pointer(&m);
 
-	tag_descend(i, w, c, current_tag, &m)
+	tag_descend(i, w, c, tag_get_current(&m), &m)
 	    if (!done) {
 		reset_cache_xattr();
 		reset_cache_client();
@@ -166,7 +166,7 @@ rulelist_apply(winrule * list)
 		XSync(display, False);
 	}
 	clients_descend(windows_shaded, i, w, c, &m)
-	    if (!done && c->manage && c->cache->tags & current_tag) {
+	    if (!done && c->manage && c->cache->tags & tag_get_current(&m)) {
 		reset_cache_xattr();
 		reset_cache_client();
 		c = client_create(w);
@@ -177,7 +177,7 @@ rulelist_apply(winrule * list)
 		XSync(display, False);
 	}
 	clients_descend(windows_minimized, i, w, c, &m)
-	    if (!done && c->manage && c->cache->tags & current_tag) {
+	    if (!done && c->manage && c->cache->tags & tag_get_current(&m)) {
 		reset_cache_xattr();
 		reset_cache_client();
 		c = client_create(w);

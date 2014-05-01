@@ -78,7 +78,9 @@ ewmh_desktop_list()
 	XWindowAttributes	*attr = window_get_attributes(root);
 	unsigned long		 desktops = TAGS;
 	unsigned long		 area[4 * TAGS], geo[2], view[2], desktop;
-	workarea		 mon;
+	workarea		 mon, m;
+
+	monitor_of_pointer(&m);
 
 	// this will return the full X screen, not Xinerama screen
 	monitor_dimensions_struts(-1, -1, &mon);
@@ -94,7 +96,7 @@ ewmh_desktop_list()
 	view[1] = 0;
 	geo[0] = attr->width;	//DisplayWidth(display, XScreenNumberOfScreen(attr->screen));
 	geo[1] = attr->height;	//DisplayHeight(display, XScreenNumberOfScreen(attr->screen));
-	desktop = tag_to_desktop(current_tag);
+	desktop = tag_to_desktop(tag_get_current(&m));
 
 	window_set_cardinal_prop(root, netatoms[_NET_NUMBER_OF_DESKTOPS],
 	    &desktops, 1);

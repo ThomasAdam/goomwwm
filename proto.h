@@ -155,7 +155,8 @@ void ruleset_execute(char *name);
 /* tag.c */
 unsigned int tag_to_desktop(unsigned int tag);
 unsigned int desktop_to_tag(unsigned int desktop);
-void tag_set_current(unsigned int tag);
+unsigned int tag_get_current(workarea *);
+void tag_set_current(unsigned int tag, workarea *);
 void tag_raise(unsigned int tag);
 void tag_auto_switch(void);
 void tag_only(unsigned int tag);

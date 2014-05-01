@@ -47,10 +47,10 @@ desktop_to_tag(unsigned int desktop)
 
 // update current desktop on all roots
 void
-tag_set_current(unsigned int tag)
+tag_set_current(unsigned int tag, workarea *m)
 {
-	current_tag = tag;
-	unsigned long d = tag_to_desktop(current_tag);
+	m->current_tag = tag;
+	unsigned long d = tag_to_desktop(m->current_tag);
 	window_set_cardinal_prop(root, netatoms[_NET_CURRENT_DESKTOP], &d, 1);
 }
 
@@ -113,7 +113,8 @@ tag_raise(unsigned int tag)
 		XRestackWindows(display, stack->array, stack->len);
 
 	winlist_free(stack);
-	tag_set_current(tag);
+	fprintf(stderr, "TAG:  %d\n", tag);
+	tag_set_current(tag, &m);
 	if (config_only_auto)
 		tag_only(tag);
 
@@ -136,17 +137,24 @@ tag_auto_switch()
 	client *c = client_active(0);
 	workarea m;
 
-	if (c && c->cache->tags && !(c->cache->tags & current_tag)) {
+	monitor_of_pointer(&m);
+
+	if (c && c->cache->tags && !(c->cache->tags & tag_get_current(&m))) {
 		int i, n = 0;
 		Window w;
 		client *o;
 
-		monitor_of_pointer(&m);
-		tag_descend(i, w, o, current_tag, &m) n++;
+		tag_descend(i, w, o, tag_get_current(&m), &m) n++;
 		if (!n)
 			tag_raise(desktop_to_tag(tag_to_desktop(c->cache->
 				    tags)));
 	}
+}
+
+unsigned int
+tag_get_current(workarea *mon)
+{
+	return mon->current_tag;
 }
 
 void

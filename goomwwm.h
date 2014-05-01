@@ -281,6 +281,7 @@ typedef struct {
 typedef struct {
 	short x, y, w, h, l, r, t, b;
 	int screen;
+	unsigned int current_tag;
 } workarea;
 
 // snapshot a window's size/pos and EWMH state
@@ -500,7 +501,7 @@ Window supporting;
 
 // tracking windows
 winlist *windows, *windows_activated, *windows_minimized, *windows_shaded;
-extern unsigned int current_tag; // = TAG1;
+//extern unsigned int current_tag; // = TAG1;
 
 // caches used to reduce X server round trips
 winlist *cache_client;

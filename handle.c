@@ -39,9 +39,14 @@ handle_keypress(XEvent * ev)
 {
 	KeySym		 key = XkbKeycodeToKeysym(display, ev->xkey.keycode, 0, 0);
 	unsigned int	 state = ev->xkey.state & ~(LockMask | NumlockMask);
+	unsigned int	 current_tag;
 	client		*c = NULL;
 	int		 i, reset_prefix = 1, reset_quit = 1;
-	
+	workarea	 m;
+
+	monitor_of_pointer(&m);
+	current_tag = tag_get_current(&m);
+
 	while (XCheckTypedEvent(display, KeyPress, ev));
 	
 	latest = ev->xkey.time;
@@ -829,6 +834,10 @@ void
 handle_maprequest(XEvent * ev)
 {
 	client *c = client_recreate(ev->xmaprequest.window);
+	workarea m;
+
+	monitor_of_pointer(&m);
+
 #ifdef DEBUG
 	if (c) {
 		event_log("MapRequest", c->window);
@@ -855,10 +864,9 @@ handle_maprequest(XEvent * ev)
 			// figure out which monitor holds the pointer, so we can nicely keep the window on-screen
 			int x, y;
 			pointer_get(&x, &y);
-			workarea a;
-			monitor_dimensions_struts(x, y, &a);
-			client_moveresize(c, 0, MAX(a.x, x - (c->w / 2)),
-			    MAX(a.y, y - (c->h / 2)), c->w, c->h);
+
+			client_moveresize(c, 0, MAX(m.x, x - (c->w / 2)),
+			    MAX(m.y, y - (c->h / 2)), c->w, c->h);
 		} else
 			// PLACEANY: windows which specify position hints are honored, all else gets centered on screen or their parent
 			// PLACECENTER: centering is enforced
@@ -893,7 +901,7 @@ handle_maprequest(XEvent * ev)
 		// default to current tag
 		client_rules_tags(c);
 		if (!c->cache->tags)
-			client_toggle_tag(c, current_tag, NOFLASH);
+			client_toggle_tag(c, tag_get_current(&m), NOFLASH);
 
 		// specifying a non-active monitor will center the window there
 		// this overrides PLACEPOINTER!
@@ -928,6 +936,10 @@ handle_mapnotify(XEvent * ev)
 {
 	reset_cache_inplay();
 	client *c = client_recreate(ev->xmap.window), *a;
+	workarea m;
+
+	monitor_of_pointer(&m);
+
 #ifdef DEBUG
 	if (c) {
 		event_log("MapNotify", c->window);
@@ -945,7 +957,7 @@ handle_mapnotify(XEvent * ev)
 		} else
 			// apply rules to new windows
 		{		// initial raise does not check -raisemode
-			if ((c->cache->tags & current_tag
+			if ((c->cache->tags & tag_get_current(&m)
 				&& config_map_mode == MAPSTEAL
 				&& !client_rule(c, RULE_BLOCK))
 			    || client_rule(c, RULE_STEAL))
@@ -954,8 +966,8 @@ handle_mapnotify(XEvent * ev)
 				// if on current tag, place new window under active window and next in activate order by default
 				// if specifically raised, raise window and leave second in activate order
 				// if specifically lowered, lower window and place last in activate order
-				if (c->cache->tags & current_tag
-				    && (a = client_active(current_tag))
+				if (c->cache->tags & tag_get_current(&m)
+				    && (a = client_active(tag_get_current(&m)))
 				    && a->window != c->window) {
 					winlist_forget(windows_activated,
 					    c->window);
@@ -1014,6 +1026,10 @@ handle_unmapnotify(XEvent * ev)
 	reset_cache_inplay();
 	int was_active = window_is_active(ev->xunmap.window);
 	client *c = client_create(ev->xunmap.window);
+	workarea m;
+
+	monitor_of_pointer(&m);
+
 	// was it a top-level app window that closed?
 	if (c && c->manage) {
 		event_log("UnmapNotify", c->window);
@@ -1038,7 +1054,7 @@ handle_unmapnotify(XEvent * ev)
 	// see if this was the active window, and if so, find someone else to take the job
 	if (was_active) {
 		if (ev->xunmap.event == root) {
-			if (!client_active(current_tag))
+			if (!client_active(tag_get_current(&m)))
 				XSetInputFocus(display, PointerRoot,
 				    RevertToPointerRoot, CurrentTime);
 			ewmh_client_list();
@@ -1216,12 +1232,13 @@ handle_enternotify(XEvent * ev)
 	while (XCheckTypedEvent(display, EnterNotify, ev));
 
 	client *c = client_recreate(ev->xcrossing.window);
+	workarea m = c->monitor;
 	// FOCUSSLOPPY = any manageable window
 	// FOCUSSLOPPYTAG = any manageable window in current tag
 	if (c && c->visible && c->manage && !c->active
 	    && (config_focus_mode == FOCUSSLOPPY
 		|| (config_focus_mode == FOCUSSLOPPYTAG
-		    && c->cache->tags & current_tag))) {
+		    && c->cache->tags & tag_get_current(&m)))) {
 		event_log("EnterNotify", c->window);
 		event_client_dump(c);
 		client_activate(c, RAISEDEF, WARPDEF);
